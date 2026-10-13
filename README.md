@@ -6,8 +6,8 @@
 
 ## 🌐 Live Deployed Application
 
-* **Live Demo (Frontend)**: [Deployed App](https://payout-taupe.vercel.app/) *(or local preview via `npm run dev`)*
-* **Backend API**: [Backend Service](https://memed-campaign-payout-tracker.onrender.com)
+* **Frontend Live Link**: [https://payout-taupe.vercel.app/](https://payout-taupe.vercel.app/) *(or local preview via `npm run dev`)*
+* **Backend API Live**: [https://memed-campaign-payout-tracker.onrender.com](https://memed-campaign-payout-tracker.onrender.com)
 * **GitHub Repository**: [https://github.com/SKEKRAM786/memed-campaign-payout-tracker](https://github.com/SKEKRAM786/memed-campaign-payout-tracker)
 
 ---
@@ -16,7 +16,7 @@
 
 * **Backend**: Node.js, TypeScript, Express.js, MongoDB (Mongoose), ioredis
 * **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
-* **Testing**: Jest, ts-jest
+* **Testing**: Jest, ts-jest (16 Unit Tests passing)
 * **DevOps**: Docker, Docker Compose
 
 ---
@@ -27,33 +27,33 @@
 memed-campaign-payout-tracker/
 ├── backend/
 │   ├── src/
-│   │   ├── config/          # Database (MongoDB) and Redis cache setup
+│   │   ├── config/          # MongoDB Atlas & Redis caching configuration
 │   │   ├── controllers/     # Auth, Campaign, and Submission controllers
-│   │   ├── middleware/      # JWT authentication and Role guards
-│   │   ├── models/          # User, Campaign, and Submission Mongoose models
-│   │   ├── routes/          # Express route definitions
-│   │   ├── services/        # Milestone calculation & budget capping logic
-│   │   ├── app.ts           # Express application configuration
-│   │   └── server.ts        # Server entrypoint
-│   ├── tests/               # Jest unit tests for payout logic & budget caps
-│   ├── Dockerfile
+│   │   ├── middleware/      # JWT verification & Role guards (brand/creator)
+│   │   ├── models/          # User, Campaign, and Submission schemas
+│   │   ├── routes/          # Express API route endpoints
+│   │   ├── services/        # Milestone calculation & budget capping algorithms
+│   │   ├── app.ts           # Express app setup with CORS and JSON body parser
+│   │   └── server.ts        # Server entrypoint with DB connection
+│   ├── tests/               # Jest test suite (calculation, caps, idempotency)
+│   ├── Dockerfile           # Multi-stage production container build
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/
 │   ├── src/
 │   │   └── app/
-│   │       ├── brand/       # Brand dashboard (create campaign, budget meters)
-│   │       ├── creator/     # Creator dashboard (browse, submit, view simulator)
-│   │       ├── login/       # Login page
+│   │       ├── brand/       # Brand dashboard: create campaign, spent vs remaining
+│   │       ├── creator/     # Creator dashboard: live campaigns, submit post, view simulator
+│   │       ├── login/       # Login page with redirect
 │   │       ├── signup/      # Signup page (Brand / Creator role select)
-│   │       ├── components/  # Navbar, ThemeToggle (Dark/Light mode)
-│   │       ├── lib/         # API client & auth session persistence
+│   │       ├── components/  # Navbar, ThemeToggle (Light/Dark mode)
+│   │       ├── lib/         # API fetch client & localStorage auth manager
 │   │       ├── layout.tsx   # Root layout with theme script
 │   │       └── page.tsx     # Modern landing page
 │   ├── Dockerfile
 │   └── package.json
-├── docker-compose.yml       # Orchestrates Backend, Frontend, MongoDB, Redis
-├── .env.example             # Root environment variables template
+├── docker-compose.yml       # Complete stack: Backend, Frontend, MongoDB, Redis
+├── .env.example             # Global environment variables template
 └── README.md
 ```
 
@@ -63,8 +63,8 @@ memed-campaign-payout-tracker/
 
 ### Prerequisites
 * Node.js 18+ and npm
-* MongoDB (Local instance or MongoDB Atlas cluster URI)
-* *(Optional)* Redis server or Docker
+* MongoDB Atlas cluster or local MongoDB instance
+* *(Optional)* Redis (if testing bonus caching locally)
 
 ---
 
@@ -77,7 +77,7 @@ npm install
 
 # Create environment configuration
 cp .env.example .env
-# Fill in your MONGODB_URI and JWT_SECRET in .env
+# Set your MONGODB_URI and JWT_SECRET in .env
 
 # Run unit tests
 npm test
@@ -114,15 +114,20 @@ docker-compose up --build
 
 ---
 
-## 🔑 Environment Variables
+## 🔑 Environment Variables Reference
 
-| Variable | Description | Default / Example |
+| Variable | Description | Example Value |
 | :--- | :--- | :--- |
-| `PORT` | Backend HTTP port | `5000` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb+srv://...` |
-| `JWT_SECRET` | Secret key for JWT tokens | `your_super_secret_jwt_key` |
-| `REDIS_URL` | Redis cache connection string *(optional)* | `redis://localhost:6379` |
+| `PORT` | Backend HTTP Port | `5000` |
+| `MONGODB_URI` | MongoDB Atlas / Local URI | `mongodb+srv://user:pass@cluster.mongodb.net/memed` |
+| `JWT_SECRET` | Secret key for signing auth tokens | `your_32_character_jwt_secret_key` |
+| `REDIS_URL` | Redis instance connection URL *(Bonus)* | `redis://localhost:6379` |
 | `NEXT_PUBLIC_API_URL` | Frontend API client base URL | `http://localhost:5000/api` |
+
+Sample templates are provided at:
+* [`.env.example`](.env.example) (Root)
+* [`backend/.env.example`](backend/.env.example)
+* [`frontend/.env.example`](frontend/.env.example)
 
 ---
 
@@ -132,7 +137,7 @@ Where the assignment brief was open, the following real-world product decisions 
 
 1. **Highest Milestone Payout Rule**:
    * Payout is calculated based on the **highest milestone crossed**, rather than cumulative summing.
-   * *Example*: If ladder is `10k views → ₹500` and `50k views → ₹2,000`, a creator with 60,000 views receives `₹2,000` total, not `₹2,500`.
+   * *Example*: If ladder is `10k views → ₹500` and `50k views → ₹2,000`, a creator with 60,000 views receives **₹2,000 total**, not ₹2,500.
 
 2. **Crossing Multiple Milestones in a Single View Update**:
    * If a post jumps from `0` straight to `100k views`, the system awards the full highest tier payout (`₹5,000`) in one transaction, without requiring intermediate step increments.
@@ -167,7 +172,7 @@ cd backend
 npm test
 ```
 
-### Test Coverage Highlights:
+### Test Coverage Highlights (16 Passing Tests):
 * ✅ Returns 0 when below first milestone
 * ✅ Awards highest milestone payout when crossing intermediate and peak tiers
 * ✅ Handles jumping multiple milestones in a single update
