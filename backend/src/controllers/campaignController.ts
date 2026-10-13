@@ -2,6 +2,13 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Campaign from "../models/Campaign";
 import { AuthenticatedRequest } from "../middleware/auth";
+import {
+  getCachedData,
+  setCachedData,
+  invalidateCache,
+} from "../config/redis";
+
+const CAMPAIGN_LIST_CACHE_KEY = "campaigns:list:active";
 
 export async function createCampaign(
   req: Request,
@@ -56,6 +63,9 @@ export async function createCampaign(
       brandId: new mongoose.Types.ObjectId(authReq.user.userId),
     });
 
+    // Invalidate campaign list cache so creators immediately see the new campaign
+    await invalidateCache(CAMPAIGN_LIST_CACHE_KEY);
+
     res.status(201).json({ campaign });
   } catch (error) {
     console.error("Create campaign error:", error);
@@ -68,11 +78,22 @@ export async function listCampaigns(
   res: Response
 ): Promise<void> {
   try {
+    // 1. Try to read from Redis cache
+    const cached = await getCachedData<unknown>(CAMPAIGN_LIST_CACHE_KEY);
+    if (cached) {
+      res.status(200).json({ campaigns: cached, fromCache: true });
+      return;
+    }
+
+    // 2. Cache miss: fetch from MongoDB
     const campaigns = await Campaign.find()
       .populate("brandId", "name")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ campaigns });
+    // 3. Save to Redis cache with 60 second TTL
+    await setCachedData(CAMPAIGN_LIST_CACHE_KEY, campaigns, 60);
+
+    res.status(200).json({ campaigns, fromCache: false });
   } catch (error) {
     console.error("List campaigns error:", error);
     res.status(500).json({ message: "Failed to fetch campaigns" });

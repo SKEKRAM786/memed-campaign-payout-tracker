@@ -40,6 +40,8 @@ export interface Submission {
   postUrl: string;
   views: number;
   payout: number;
+  isFlagged?: boolean;
+  flagReason?: string;
   createdAt: string;
   updatedAt: string;
 }

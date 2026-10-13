@@ -300,6 +300,11 @@ export default function CreatorDashboard() {
                             {camp.platform}
                           </span>
                         )}
+                        {sub.isFlagged && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                            <span>⚠️</span> Flagged (View Spike)
+                          </span>
+                        )}
                       </div>
                       <a
                         href={sub.postUrl}
@@ -309,6 +314,11 @@ export default function CreatorDashboard() {
                       >
                         {sub.postUrl} ↗
                       </a>
+                      {sub.isFlagged && sub.flagReason && (
+                        <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mt-1">
+                          {sub.flagReason}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-4">

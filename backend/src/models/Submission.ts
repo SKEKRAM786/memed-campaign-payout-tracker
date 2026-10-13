@@ -6,6 +6,10 @@ export interface ISubmission extends Document {
   postUrl: string;
   views: number;
   payout: number;
+  isFlagged: boolean;
+  flagReason?: string;
+  previousViews: number;
+  lastViewsUpdatedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +40,22 @@ const submissionSchema = new Schema<ISubmission>(
       type: Number,
       default: 0,
       min: 0,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    flagReason: {
+      type: String,
+      default: null,
+    },
+    previousViews: {
+      type: Number,
+      default: 0,
+    },
+    lastViewsUpdatedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   { timestamps: true }
