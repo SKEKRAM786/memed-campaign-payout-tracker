@@ -6,7 +6,7 @@
 
 ## 🌐 Live Deployed Application
 
-* **Frontend Live Link**: [https://payout-taupe.vercel.app/](https://payout-taupe.vercel.app/) *(or local preview via `npm run dev`)*
+* **Frontend Live Link**: https://memed-campaign-payout-tracker-dusky.vercel.app/creator
 * **Backend API Live**: [https://memed-campaign-payout-tracker.onrender.com](https://memed-campaign-payout-tracker.onrender.com)
 * **GitHub Repository**: [https://github.com/SKEKRAM786/memed-campaign-payout-tracker](https://github.com/SKEKRAM786/memed-campaign-payout-tracker)
 
