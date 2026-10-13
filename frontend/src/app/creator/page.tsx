@@ -52,16 +52,24 @@ export default function CreatorDashboard() {
       setLoading(true);
       setError("");
       const [campRes, subRes] = await Promise.all([
-        apiRequest<{ campaigns: Campaign[] }>("/campaigns"),
+        apiRequest<{ campaigns?: Campaign[]; data?: Campaign[] } | Campaign[]>("/campaigns"),
         apiRequest<{ submissions: Submission[]; totalEarnings: number }>("/submissions/my"),
       ]);
 
-      setCampaigns(campRes.campaigns);
-      setSubmissions(subRes.submissions);
-      setTotalEarnings(subRes.totalEarnings);
+      const parsedCampaigns: Campaign[] = Array.isArray(campRes)
+        ? campRes
+        : Array.isArray(campRes?.campaigns)
+        ? campRes.campaigns
+        : Array.isArray(campRes?.data)
+        ? campRes.data
+        : [];
 
-      if (campRes.campaigns.length > 0 && !selectedCampaignId) {
-        setSelectedCampaignId(campRes.campaigns[0]._id);
+      setCampaigns(parsedCampaigns);
+      setSubmissions(subRes?.submissions || []);
+      setTotalEarnings(subRes?.totalEarnings || 0);
+
+      if (parsedCampaigns.length > 0) {
+        setSelectedCampaignId((prev) => (prev ? prev : parsedCampaigns[0]._id));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard data");
@@ -174,8 +182,17 @@ export default function CreatorDashboard() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-sm text-red-700 dark:text-red-300">
-          {error}
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-sm text-red-700 dark:text-red-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">⚠️</span>
+            <span className="font-medium">{error}</span>
+          </div>
+          <button
+            onClick={loadAllData}
+            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs cursor-pointer transition"
+          >
+            Retry Connection
+          </button>
         </div>
       )}
 
@@ -208,9 +225,16 @@ export default function CreatorDashboard() {
             <select
               value={selectedCampaignId}
               onChange={(e) => setSelectedCampaignId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-white bg-white dark:bg-[#0c121e] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition"
+              disabled={loading || campaigns.length === 0}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-white bg-white dark:bg-[#0c121e] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition disabled:opacity-60"
             >
-              {campaigns.length === 0 && <option value="">No active campaigns available</option>}
+              {loading && <option value="">⏳ Loading active campaigns...</option>}
+              {!loading && error && (
+                <option value="">⚠️ Error loading campaigns (Click Retry above)</option>
+              )}
+              {!loading && !error && campaigns.length === 0 && (
+                <option value="">No active campaigns available</option>
+              )}
               {campaigns.map((camp) => (
                 <option key={camp._id} value={camp._id}>
                   {camp.name} ({camp.platform}) — Rem. Budget: ₹
@@ -459,9 +483,35 @@ export default function CreatorDashboard() {
           </span>
         </div>
 
-        {campaigns.length === 0 ? (
-          <div className="bg-white dark:bg-[#111726] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 text-center text-sm text-slate-400">
-            No active campaigns available right now. Check back soon!
+        {loading ? (
+          <div className="bg-white dark:bg-[#111726] p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center text-sm text-slate-400">
+            ⏳ Loading live campaigns...
+          </div>
+        ) : error ? (
+          <div className="bg-white dark:bg-[#111726] p-8 rounded-3xl border border-red-200 dark:border-red-900/60 text-center space-y-3">
+            <div className="text-3xl">⚠️</div>
+            <div className="text-base font-bold text-red-700 dark:text-red-400">
+              Failed to load active campaigns
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              {error}
+            </p>
+            <button
+              onClick={loadAllData}
+              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shadow-xs cursor-pointer transition"
+            >
+              🔄 Retry Loading Campaigns
+            </button>
+          </div>
+        ) : campaigns.length === 0 ? (
+          <div className="bg-white dark:bg-[#111726] p-8 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 text-center space-y-2">
+            <div className="text-3xl">🎯</div>
+            <div className="text-base font-bold text-slate-800 dark:text-slate-200">
+              No active campaigns available right now
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              Brands have not published any campaigns yet. Check back soon!
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

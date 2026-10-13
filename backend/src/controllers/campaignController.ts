@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Campaign from "../models/Campaign";
+import User from "../models/User";
 import { AuthenticatedRequest } from "../middleware/auth";
 import {
   getCachedData,

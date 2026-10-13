@@ -11,8 +11,8 @@ import {
 
 const router = Router();
 
-// Creators can browse campaigns; login is required.
-router.get("/", authenticateToken, requireRole("creator"), listCampaigns);
+// Authenticated users (creators and brands) can browse live campaigns.
+router.get("/", authenticateToken, listCampaigns);
 
 // Brands can create campaigns.
 router.post("/", authenticateToken, requireRole("brand"), createCampaign);

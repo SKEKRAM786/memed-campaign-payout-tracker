@@ -1,4 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
+import "./Campaign";
+import "./User";
 
 export interface ISubmission extends Document {
   campaignId: mongoose.Types.ObjectId;
