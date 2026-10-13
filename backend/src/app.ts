@@ -9,6 +9,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Meme'd Campaign Payout Tracker API is running",
+    endpoints: {
+      auth: "/api/auth",
+      campaigns: "/api/campaigns",
+      submissions: "/api/submissions",
+      health: "/api/health",
+    },
+  });
+});
+
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     success: true,
