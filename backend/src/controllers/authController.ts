@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -42,10 +41,34 @@ export async function signup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail }).select(
+      "+passwordHash +password"
+    );
 
     if (existingUser) {
-      res.status(409).json({ message: "Email is already registered" });
+      const storedHash =
+        existingUser.passwordHash || (existingUser as unknown as { password?: string }).password;
+
+      // If user enters matching password, log them in seamlessly
+      if (storedHash && (await bcrypt.compare(password, storedHash))) {
+        const token = createToken(existingUser.id, existingUser.role || role);
+        res.status(200).json({
+          message: "Account already exists. Logged in successfully!",
+          token,
+          user: {
+            id: existingUser.id,
+            name: existingUser.name || name.trim(),
+            email: existingUser.email,
+            role: existingUser.role || role,
+          },
+        });
+        return;
+      }
+
+      res.status(409).json({
+        message:
+          "An account with this email already exists. Please log in with your password, or use a different email.",
+      });
       return;
     }
 
@@ -75,9 +98,12 @@ export async function signup(req: Request, res: Response): Promise<void> {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === 11000
+      (error as { code: number }).code === 11000
     ) {
-      res.status(409).json({ message: "Email is already registered" });
+      res.status(409).json({
+        message:
+          "An account with this email already exists. Please log in with your password, or use a different email.",
+      });
       return;
     }
 
@@ -95,13 +121,31 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await User.findOne({
-      email: email.trim().toLowerCase(),
-    }).select("+passwordHash");
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    const user = await User.findOne({
+      email: normalizedEmail,
+    }).select("+passwordHash +password");
+
+    if (!user) {
       res.status(401).json({ message: "Invalid email or password" });
       return;
+    }
+
+    const storedHash =
+      user.passwordHash || (user as unknown as { password?: string }).password;
+
+    if (!storedHash || !(await bcrypt.compare(password, storedHash))) {
+      res.status(401).json({ message: "Invalid email or password" });
+      return;
+    }
+
+    // Auto-heal legacy users if passwordHash or role or name were missing
+    if (!user.passwordHash || !user.role || !user.name) {
+      user.passwordHash = storedHash;
+      user.role = user.role || "creator";
+      user.name = user.name || normalizedEmail.split("@")[0];
+      await user.save();
     }
 
     const token = createToken(user.id, user.role);
