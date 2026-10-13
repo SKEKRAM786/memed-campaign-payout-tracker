@@ -1,5 +1,15 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+function getBaseApiUrl(): string {
+  let url = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+  ).trim();
+  url = url.replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
+  }
+  return url;
+}
+
+export const API_URL = getBaseApiUrl();
 
 export interface Milestone {
   views: number;
@@ -88,7 +98,8 @@ export async function apiRequest<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${API_URL}${cleanEndpoint}`, {
     ...options,
     headers,
   });
