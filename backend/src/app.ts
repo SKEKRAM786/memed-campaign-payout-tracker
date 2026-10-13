@@ -1,7 +1,8 @@
-
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
+import campaignRoutes from "./routes/campaignRoutes";
+import submissionRoutes from "./routes/submissionRoutes";
 
 const app = express();
 
@@ -16,5 +17,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/campaigns", campaignRoutes);
+app.use("/api/submissions", submissionRoutes);
 
 export default app;
